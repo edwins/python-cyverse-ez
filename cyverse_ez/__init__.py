@@ -6,6 +6,7 @@ import sys
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 EZ_CLICK_MODULES='/opt/cyverse/tmp/ez_modules'
 DEBUG=False
+UPDATE_DONE=False
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option('--debug', is_flag=True, default=False, help='enables python debugging')
@@ -28,6 +29,12 @@ if __name__ == '__main__':
 
 @ez.command('update',short_help='update the ez commands')
 def update():
+   global UPDATE_DONE
+
+   # check if update done, if so ignore
+   if UPDATE_DONE:
+      return
+   
    debug_msg('in ez.update()')
 
    click.echo ("ez: " + EZ_CLICK_MODULES + " not found or 'update' called. Updating...")
@@ -37,6 +44,9 @@ def update():
    # TODO: do a git pull
 
    click.echo ("ez: finished updating. You can call ez again")
+
+   # set the fact that an update was already finished
+   UPDATE_DONE = True
    
 
 def debug_msg (msg):
