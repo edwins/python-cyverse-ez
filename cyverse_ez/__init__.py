@@ -17,31 +17,12 @@ DEBUG=False
 LOG_NAME='/tmp/cyverse-ez.log'
 LOG_HANDLE = None
 
-#@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.group(context_settings=CONTEXT_SETTINGS)
-@click.option('--debug', is_flag=True, default=False, help='enables python debugging')
-@click.pass_context
-def ez(ctx, debug):
-   global DEBUG
 
-   init_log()
-   
-   if debug:
-      echo_msg ("Debugging enabled")
-      DEBUG = True
+@click.group()
+def ez_primary_group():
+   pass
 
-   debug_msg('start ez.ez()')
-
-   if ctx.invoked_subcommand is None:
-      click.echo(ctx.get_help())
-
-   debug_msg('end ez.ez()')
-      
-
-if __name__ == '__main__':
-   ez()
-
-@ez.command('update',short_help='update the ez commands')
+@ez_primary_group.command('update',short_help='update the ez commands')
 def update():
 
    debug_msg('start ez.update()')
@@ -55,7 +36,6 @@ def update():
    if not os.path.exists(EZ_MODULES_DIR):
       debug_msg("update: cloning repo " + EZ_MODULES_REPO + " into "+ EZ_MODULES_DIR)
       Repo.clone_from (EZ_MODULES_REPO, EZ_MODULES_DIR)
-      #os.makedirs (EZ_MODULES_DIR)
       os.chmod (EZ_MODULES_DIR, 0777)
    else:
       debug_msg("update: git pulling modules repo " + EZ_MODULES_REPO)
@@ -77,6 +57,9 @@ def init_log():
 
 # This function will write to stdout and to the log file
 def echo_msg (msg):
+   global LOG_HANDLE
+
+   init_log()
    
    time_stamp = datetime.now().strftime('%b %d %H:%M:%S')
    click.echo (msg)
@@ -84,13 +67,49 @@ def echo_msg (msg):
 
 def debug_msg (msg):
    global DEBUG
-   global LOG_HANDLE
    
    if DEBUG:
       echo_msg ("DEBUG " + msg)
 
-# stub for the main function
-ez_command_collection = click.CommandCollection (sources=[ez])
-if __name__ == '__main__':
-   ez_command_collection()
+class EZCliModules(click.MultiCommand):
 
+   def list_commands(self, ctx):
+      debug_msg('start EZCliModules.list_commands()')
+      mlist = []
+      for fn in os.listdir(EZ_MODULES_DIR):
+         if fn.endswith('.py'):
+            mlist.append(fn[:-3])
+      mlist.sort()
+      debug_msg('end EZCliModules.list_commands()')
+      return mlist
+
+   def get_command(self, ctx, name):
+      debug_msg('start EZCliModules.get_command()')
+      ns = {}
+      fn = os.path.join (EZ_MODULES_DIR, name + '.py')
+      with open(fn) as f:
+         code = compile(f.read(), fn, 'exec')
+         eval(code, ns, ns)
+      debug_msg('end EZCliModules.get_command()')
+      return ns['ezmodule']
+
+# stub for the main function
+ez_modules = EZCliModules()
+
+@click.command(cls=click.CommandCollection, sources=[ez_primary_group,ez_modules], context_settings=CONTEXT_SETTINGS)
+@click.option('-d', '--debug', is_flag=True, default=False, help='enables python debugging')
+@click.pass_context
+def ez(ctx, debug):
+   global DEBUG
+
+   if debug:
+      echo_msg ("Debugging enabled")
+      DEBUG = True
+
+   debug_msg('start ez.ez()')
+   if ctx.invoked_subcommand is None:
+      click.echo(ctx.get_help())
+   debug_msg('end ez.ez()')
+
+if __name__ == '__main__':
+   ez()
