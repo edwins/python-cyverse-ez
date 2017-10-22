@@ -108,7 +108,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'ez=cyverse_ez:ez',
+            'ezbeta=cyverse_ez:ez',
         ],
     },
 )
