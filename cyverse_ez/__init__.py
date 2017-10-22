@@ -76,22 +76,26 @@ class EZCliModules(click.MultiCommand):
    def list_commands(self, ctx):
       debug_msg('start EZCliModules.list_commands()')
       mlist = []
-      for fn in os.listdir(EZ_MODULES_DIR):
-         if fn.endswith('.py'):
-            mlist.append(fn[:-3])
-      mlist.sort()
+      if os.path.exists(EZ_MODULES_DIR):
+         for fn in os.listdir(EZ_MODULES_DIR):
+            if fn.endswith('.py'):
+               mlist.append(fn[:-3])
+               mlist.sort()
       debug_msg('end EZCliModules.list_commands()')
       return mlist
 
    def get_command(self, ctx, name):
       debug_msg('start EZCliModules.get_command()')
       ns = {}
-      fn = os.path.join (EZ_MODULES_DIR, name + '.py')
-      with open(fn) as f:
-         code = compile(f.read(), fn, 'exec')
-         eval(code, ns, ns)
-      debug_msg('end EZCliModules.get_command()')
-      return ns['ezmodule']
+      if os.path.exists (EZ_MODULES_DIR):
+         fn = os.path.join (EZ_MODULES_DIR, name + '.py')
+         with open(fn) as f:
+            code = compile(f.read(), fn, 'exec')
+            eval(code, ns, ns)
+            debug_msg('end EZCliModules.get_command()')
+            return ns['ezmodule']
+      else:
+         return None
 
 # stub for the main function
 ez_modules = EZCliModules()
